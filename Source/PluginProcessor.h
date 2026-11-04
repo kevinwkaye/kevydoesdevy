@@ -55,8 +55,8 @@ public:
     void stepPreset (int direction);
     void toggleBypassAll();
 
-    // ---- presets: 8 banks of 3
-    static constexpr int kSlots = 24;
+    // ---- presets: 10 banks of 3 (banks 1 to 8 as on the pedal)
+    static constexpr int kSlots = 30;
     int getSlot() const { return slot.load(); }
     juce::String slotName (int s) const;
     juce::String slotNote (int s) const;

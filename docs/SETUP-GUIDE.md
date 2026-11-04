@@ -93,7 +93,7 @@ Every job also has a button on screen.
 ## 6. Handy extras
 
 - **Right-click any knob** for MIDI Learn, if you want a knob on a controller.
-- **Presets**: click the preset name to pick from 24 (8 banks of 3), and click **SAVE** to store your own. They save with your Reaper project.
+- **Presets**: click the preset name to pick from 30 (10 banks of 3). Banks 1 to 8 are the Ocean Machine II's own presets, bank 9 is bass picks and bank 10 is the original Ocean Machine sound. Click **SAVE** to store your own. They save with your Reaper project.
 - The **EXPRESSION** box is ready if you ever plug a pedal into the Anagram's Exp jack. It's set to sweep feedback on both delays. Click **LEARN**, then **CALIBRATE**.
 - Drag the bottom-right corner of the plugin window to make it bigger.
 

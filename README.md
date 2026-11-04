@@ -1,6 +1,6 @@
 # Kevy does Devy
 
-A Windows VST3 for bass, recreating both Mooer Ocean Machines (the 2018 original and the Ocean Machine II): two delays with 9 types each, a reverb with 9 types plus shimmer, a 120 second stereo looper, four routings, presets, tap tempo and footswitch control built around a three-switch pedal such as the Darkglass Anagram. It's styled after the friend's own artwork, with his big-eyed skull as the mascot.
+A Windows VST3 for bass, recreating both Mooer Ocean Machines (the 2018 original and the Ocean Machine II): two delays with 9 types each, a reverb with 9 types plus shimmer, a 120 second stereo looper, four routings, 30 presets (the Ocean Machine II's factory banks plus bass and MK I banks), tap tempo and footswitch control built around a three-switch pedal such as the Darkglass Anagram. It's styled after the friend's own artwork, with his big-eyed skull as the mascot.
 
 **Download:** [KevyDoesDevy-Windows.zip](https://github.com/kevinwkaye/kevydoesdevy/raw/builds/KevyDoesDevy-Windows.zip), built by GitHub Actions on every push. It contains the VST3, a standalone version and the setup guide. Nothing else needs installing.
 

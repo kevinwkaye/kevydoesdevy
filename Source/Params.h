@@ -2,6 +2,7 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <map>
+#include <string>
 #include <vector>
 
 // Every parameter in one list, so the host, presets, MIDI Learn and footswitches all see the same set.
@@ -126,43 +127,71 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout
     return layout;
 }
 
-// Factory presets: 8 banks of 3. Each lists only what differs from the defaults.
-struct FactoryPreset { const char* name; const char* note; std::map<juce::String, float> values; };
+// Presets: 10 banks of 3. Each lists only what differs from the defaults.
+// Banks 1 to 7 are the Ocean Machine II factory presets, from photos of the pedal's screen
+// (reverb type, both delay types and both delay times; knob settings aren't shown there,
+// so those keep the bass-friendly defaults). Bank 8 and slot 3C are stand-ins until the
+// missing factory screens arrive. Bank 9 is bass picks, bank 10 the MK I bank.
+struct FactoryPreset { const char* name; juce::String note; std::map<juce::String, float> values; };
 inline const std::vector<FactoryPreset>& factoryPresets()
 {
     using namespace ParamIDs;
-    static std::vector<FactoryPreset> p {
-        { "BILGE PUMP", "tape into hall, tight lows", { { aType, 2 }, { aTime, 420 }, { aFeedback, 0.45f }, { bOn, 0 }, { rType, 1 }, { rDecay, 0.55f } } },
-        { "SEWER CHOIR", "galaxy wash with shimmer", { { aOn, 0 }, { bOn, 1 }, { bType, 5 }, { bSubdiv, 2 }, { bFeedback, 0.5f }, { bMix, 0.38f }, { rDecay, 0.8f }, { rShimmer, 0.45f }, { rMix, 0.45f } } },
-        { "DROOL POOL", "dotted eighths, dyna duck", { { aType, 0 }, { aSubdiv, 2 }, { aFeedback, 0.35f }, { bOn, 1 }, { bType, 4 }, { bSubdiv, 1 }, { rType, 0 }, { rMix, 0.2f } } },
-
-        { "GUTTER SURF", "drum echo into spring", { { aType, 3 }, { aTime, 300 }, { aFeedback, 0.4f }, { bOn, 0 }, { rType, 7 }, { rDecay, 0.5f }, { rMix, 0.45f } } },
-        { "BLOODSHOT TIDE", "MK I grit, fuzzy repeats", { { aType, 8 }, { aVoice, 1 }, { aFeedback, 0.55f }, { aTime, 360 }, { bOn, 0 }, { rType, 2 }, { rVoice, 1 } } },
-        { "PUKE TIDE", "liquid phaser, mod verb", { { aType, 4 }, { bOn, 1 }, { bType, 6 }, { bSubdiv, 3 }, { rType, 8 }, { rDecay, 0.6f } } },
-
-        { "WALL OF SLUDGE", "the big Devy wall", { { aType, 2 }, { aSubdiv, 1 }, { aFeedback, 0.5f }, { bOn, 1 }, { bType, 1 }, { bSubdiv, 2 }, { bPing, 1 }, { route, 1 }, { rDecay, 0.85f }, { rShimmer, 0.3f }, { rMix, 0.5f } } },
-        { "ROTTEN RAINBOW", "fifths climbing up", { { aType, 5 }, { aFeedback, 0.5f }, { aMix, 0.35f }, { bOn, 0 }, { rType, 1 } } },
-        { "CRYSTAL SKULL", "octave repeats, plate", { { aType, 6 }, { aFeedback, 0.45f }, { bOn, 0 }, { rType, 2 }, { rShimmer, 0.25f } } },
-
-        { "BACKWARDS BURP", "reverse delay, reverse verb", { { aOn, 0 }, { bOn, 1 }, { bType, 8 }, { bTime, 600 }, { bSubdiv, 0 }, { rType, 6 }, { rDecay, 0.45f } } },
-        { "TRI-MOD MULLET", "80s chorus repeats", { { aOn, 0 }, { bOn, 1 }, { bType, 7 }, { bSubdiv, 2 }, { rType, 0 } } },
-        { "LO-FI LUNCH", "bit crushed, flanged verb", { { aType, 7 }, { aFeedback, 0.5f }, { bOn, 0 }, { rType, 4 } } },
-
-        { "STINK FILTER", "sweeping filter verb", { { aType, 0 }, { aMix, 0.25f }, { bOn, 0 }, { rType, 5 }, { rMix, 0.5f }, { rDecay, 0.7f } } },
-        { "GRAVY SPRING", "spring on its own", { { aOn, 0 }, { bOn, 0 }, { rType, 7 }, { rMix, 0.5f } } },
-        { "DIRTY BATHWATER", "analog into dist-verb", { { aType, 1 }, { bOn, 0 }, { rType, 3 }, { rMix, 0.3f } } },
-
-        { "SLAP CHOP", "short slapback, small room", { { aType, 0 }, { aTime, 95 }, { aFeedback, 0.1f }, { aMix, 0.45f }, { bOn, 0 }, { rType, 0 }, { rMix, 0.25f } } },
-        { "DUB SNOT", "dark tape, long feedback", { { aType, 2 }, { aSubdiv, 1 }, { aFeedback, 0.68f }, { aTone, 0.32f }, { bOn, 1 }, { bType, 1 }, { bSubdiv, 2 }, { rDecay, 0.6f } } },
-        { "LOOP SOUP", "looper first, effects over it", { { aType, 0 }, { aFeedback, 0.3f }, { bOn, 0 }, { rType, 2 }, { loopPos, 0 } } },
-
-        { "FROZEN GOB", "huge hall, ready to freeze", { { aOn, 0 }, { bOn, 1 }, { bType, 5 }, { rDecay, 0.95f }, { rMix, 0.5f } } },
-        { "FLANGED FLAN", "flanged reverb wash", { { aOn, 0 }, { bOn, 0 }, { rType, 4 }, { rDecay, 0.75f }, { rMix, 0.5f } } },
-        { "GOBLIN CHOIR", "mod verb, heavy shimmer", { { aOn, 0 }, { bOn, 0 }, { rType, 8 }, { rDecay, 0.85f }, { rShimmer, 0.7f }, { rMix, 0.5f } } },
-
-        { "OG BILGE", "MK I: tape into hall", { { aType, 2 }, { aVoice, 1 }, { bOn, 0 }, { bVoice, 1 }, { rVoice, 1 }, { rType, 1 } } },
-        { "OG SEWER", "MK I: galaxy and shimmer", { { aOn, 0 }, { aVoice, 1 }, { bOn, 1 }, { bType, 5 }, { bVoice, 1 }, { rVoice, 1 }, { rShimmer, 0.5f }, { rDecay, 0.8f } } },
-        { "OG FUZZBALL", "MK I: fuzzy into dist-verb", { { aType, 8 }, { aVoice, 1 }, { aFeedback, 0.5f }, { bOn, 0 }, { bVoice, 1 }, { rType, 3 }, { rVoice, 1 } } },
+    // reverb type, Delay A type, Delay B type, Delay A ms, Delay B ms (Free time, all on)
+    auto om = [] (const char* name, int r, int a, int b, float aMs, float bMs, bool reverbOn = true) -> FactoryPreset
+    {
+        static const char* rn[] = { "room", "hall", "plate", "dist-verb", "fl-verb", "filter", "reverse", "spring", "mod" };
+        static const char* an[] = { "digital", "analog", "tape", "echo", "liquid", "rainbow", "crystal", "low-bit", "fuzzy" };
+        static const char* bn[] = { "digital", "analog", "tape", "real", "dyna", "galaxy", "mod", "tri-mod", "mod-inv" };
+        const juce::String note = juce::String (reverbOn ? rn[r] : "no verb") + ", " + an[a] + " + " + bn[b];
+        return { name, note,
+                 { { rType, (float) r }, { rOn, reverbOn ? 1.0f : 0.0f }, { aType, (float) a }, { bType, (float) b },
+                   { aOn, 1 }, { bOn, 1 }, { aSubdiv, 0 }, { bSubdiv, 0 }, { aTime, aMs }, { bTime, bMs }, { bPing, 0 } } };
     };
+    static std::vector<FactoryPreset> p = [&]
+    {
+        std::vector<FactoryPreset> v;
+        v.reserve (30);
+        // bank 1
+        v.push_back (om ("DEVY 1A", 1, 1, 0, 859, 400));
+        v.push_back (om ("DEVY 1B", 1, 2, 0, 940, 540));
+        v.push_back (om ("DEVY 1C", 1, 8, 5, 940, 540));
+        // bank 2
+        v.push_back (om ("DEVY 2A", 1, 0, 4, 422, 839));
+        v.push_back (om ("DEVY 2B", 5, 1, 4, 218, 424));
+        v.push_back (om ("DEVY 2C", 2, 4, 2, 400, 540));
+        // bank 3
+        v.push_back (om ("DEVY 3A", 2, 2, 0, 400, 800));
+        v.push_back (om ("DEVY 3B", 3, 4, 2, 400, 800));
+        v.push_back ({ "SEWER CHOIR", "stand-in until factory 3C", { { aOn, 0 }, { bOn, 1 }, { bType, 5 }, { bSubdiv, 2 }, { bFeedback, 0.5f }, { bMix, 0.38f }, { rDecay, 0.8f }, { rShimmer, 0.45f }, { rMix, 0.45f } } });
+        // bank 4
+        v.push_back (om ("DEVY 4A", 6, 7, 3, 781, 520));
+        v.push_back (om ("DEVY 4B", 1, 6, 1, 970, 124, false));
+        v.push_back (om ("DEVY 4C", 1, 1, 8, 408, 817));
+        // bank 5
+        v.push_back (om ("DEVY 5A", 0, 2, 3, 176, 705));
+        v.push_back (om ("DEVY 5B", 2, 3, 5, 176, 470));
+        v.push_back (om ("DEVY 5C", 1, 2, 0, 623, 311));
+        // bank 6
+        v.push_back (om ("DEVY 6A", 8, 6, 3, 163, 478));
+        v.push_back (om ("DEVY 6B", 5, 5, 1, 204, 520));
+        v.push_back (om ("DEVY 6C", 0, 0, 0, 652, 869));
+        // bank 7
+        v.push_back (om ("DEVY 7A", 3, 8, 3, 672, 2000));
+        v.push_back (om ("DEVY 7B", 6, 4, 2, 336, 1014));
+        v.push_back (om ("DEVY 7C", 1, 4, 5, 1982, 668));
+        // bank 8: stand-ins until the factory screens arrive
+        v.push_back ({ "GUTTER SURF", "stand-in until factory 8A", { { aType, 3 }, { aTime, 300 }, { aFeedback, 0.4f }, { bOn, 0 }, { rType, 7 }, { rDecay, 0.5f }, { rMix, 0.45f } } });
+        v.push_back ({ "CRYSTAL SKULL", "stand-in until factory 8B", { { aType, 6 }, { aFeedback, 0.45f }, { bOn, 0 }, { rType, 2 }, { rShimmer, 0.25f } } });
+        v.push_back ({ "FROZEN GOB", "stand-in until factory 8C", { { aOn, 0 }, { bOn, 1 }, { bType, 5 }, { rDecay, 0.95f }, { rMix, 0.5f } } });
+        // bank 9: bass picks
+        v.push_back ({ "BILGE PUMP", "tape into hall, tight lows", { { aType, 2 }, { aTime, 420 }, { aFeedback, 0.45f }, { bOn, 0 }, { rType, 1 }, { rDecay, 0.55f } } });
+        v.push_back ({ "WALL OF SLUDGE", "the big Devy wall", { { aType, 2 }, { aSubdiv, 1 }, { aFeedback, 0.5f }, { bOn, 1 }, { bType, 1 }, { bSubdiv, 2 }, { bPing, 1 }, { route, 1 }, { rDecay, 0.85f }, { rShimmer, 0.3f }, { rMix, 0.5f } } });
+        v.push_back ({ "DUB SNOT", "dark tape, long feedback", { { aType, 2 }, { aSubdiv, 1 }, { aFeedback, 0.68f }, { aTone, 0.32f }, { bOn, 1 }, { bType, 1 }, { bSubdiv, 2 }, { rDecay, 0.6f } } });
+        // bank 10: MK I
+        v.push_back ({ "OG BILGE", "MK I: tape into hall", { { aType, 2 }, { aVoice, 1 }, { bOn, 0 }, { bVoice, 1 }, { rVoice, 1 }, { rType, 1 } } });
+        v.push_back ({ "OG SEWER", "MK I: galaxy and shimmer", { { aOn, 0 }, { aVoice, 1 }, { bOn, 1 }, { bType, 5 }, { bVoice, 1 }, { rVoice, 1 }, { rShimmer, 0.5f }, { rDecay, 0.8f } } });
+        v.push_back ({ "OG FUZZBALL", "MK I: fuzzy into dist-verb", { { aType, 8 }, { aVoice, 1 }, { aFeedback, 0.5f }, { bOn, 0 }, { bVoice, 1 }, { rType, 3 }, { rVoice, 1 } } });
+        return v;
+    }();
     return p;
 }

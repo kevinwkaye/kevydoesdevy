@@ -39,6 +39,7 @@ KddProcessor::KddProcessor()
             raw[rp->getParameterID()] = apvts.getRawParameterValue (rp->getParameterID());
     for (auto& w : uiWet) w.store (0.0f);
     initSlots();
+    loadSlot (0);   // a fresh copy starts on preset 1A, like the pedal
     settings.load();
     settingsStamp = PedalSettings::file().getLastModificationTime();
     direct->setSink (&sendToFocused);
@@ -242,7 +243,7 @@ void KddProcessor::handleMidi (const MidiMessage& m, bool fromDevice)
             }
         }
 
-    // program changes on channel 16 pick presets 1 to 24
+    // program changes on channel 16 pick presets 1 to 30
     if (isPC && ch == 16) queue (ProgramKind, m.getProgramChangeNumber(), 0);
 }
 
@@ -408,7 +409,7 @@ std::pair<String, String> KddProcessor::jobFor (int m, int sw)
         { { "Delay A on / off", "hold or 2x: infinite" }, { "Delay B on / off", "hold or 2x: infinite" }, { "Reverb on / off", "hold or 2x: freeze" }, { "Next mode", "" } },
         { { "Tap Delay A", "sets its own time" }, { "Tap Delay B", "sets its own time" }, { "Master tap", "delays on a note value follow" }, { "Next mode", "" } },
         { { "Reverse", "toggle" }, { "Half speed", "2x: undo last dub" }, { "Rec / play / dub", "2x: stop  hold: clear" }, { "Next mode", "" } },
-        { { "Preset down", "8 banks of 3" }, { "Preset up", "8 banks of 3" }, { "Back to play", "" }, { "Next mode", "" } },
+        { { "Preset down", "10 banks of 3" }, { "Preset up", "10 banks of 3" }, { "Back to play", "" }, { "Next mode", "" } },
     };
     const auto& j = jobs[jlimit (0, 3, m)][jlimit (0, 3, sw)];
     return { j[0], j[1] };

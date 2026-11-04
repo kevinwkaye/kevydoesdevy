@@ -691,7 +691,7 @@ public:
     void presetMenu (bool save)
     {
         PopupMenu m;
-        for (int b = 0; b < 8; ++b)
+        for (int b = 0; b < KddProcessor::kSlots / 3; ++b)
         {
             PopupMenu bank;
             for (int s = 0; s < 3; ++s)
