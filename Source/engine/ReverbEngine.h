@@ -31,6 +31,7 @@ class ReverbEngine
 {
 public:
     static constexpr int N = 8;
+    static constexpr float kMakeUp = 3.2f;   // +10 dB
 
     void prepare (float sampleRate)
     {
@@ -210,8 +211,9 @@ public:
             const float m = 0.5f * (yl + yr), s = 0.5f * (yl - yr);
             yl = m + 0.5f * s; yr = m - 0.5f * s;
         }
-        outL = yl * base.outGain;
-        outR = yr * base.outGain;
+        // make-up gain so the reverb sits level with the delays at the same Mix setting
+        outL = yl * base.outGain * kMakeUp;
+        outR = yr * base.outGain * kMakeUp;
         level = wetEnv.process (0.5f * (outL + outR));
     }
 
@@ -261,11 +263,11 @@ private:
         {
             case ReverbType::Room:     base = { 0.32f, 0.62f, 6000.0f, 0.3f, 0.35f, 0.0f, 1.1f }; break;
             case ReverbType::Hall:     base = { 1.0f, 0.72f, 7500.0f, 0.6f, 1.0f, 12.0f, 1.0f }; break;
-            case ReverbType::Plate:    base = { 0.55f, 0.82f, 11000.0f, 0.4f, 0.8f, 0.0f, 1.0f }; break;
-            case ReverbType::DistVerb: base = { 0.8f, 0.7f, 6500.0f, 0.4f, 0.8f, 6.0f, 1.0f }; break;
-            case ReverbType::FlVerb:   base = { 0.8f, 0.7f, 8000.0f, 0.4f, 0.9f, 6.0f, 1.0f }; break;
+            case ReverbType::Plate:    base = { 0.55f, 0.82f, 11000.0f, 0.4f, 0.8f, 0.0f, 1.2f }; break;
+            case ReverbType::DistVerb: base = { 0.8f, 0.7f, 6500.0f, 0.4f, 0.8f, 6.0f, 0.75f }; break;
+            case ReverbType::FlVerb:   base = { 0.8f, 0.7f, 8000.0f, 0.4f, 0.9f, 6.0f, 1.35f }; break;
             case ReverbType::Filter:   base = { 0.9f, 0.72f, 9000.0f, 0.5f, 0.9f, 6.0f, 1.1f }; break;
-            case ReverbType::Reverse:  base = { 0.7f, 0.75f, 8000.0f, 0.4f, 0.6f, 0.0f, 1.0f }; break;
+            case ReverbType::Reverse:  base = { 0.7f, 0.75f, 8000.0f, 0.4f, 0.6f, 0.0f, 1.6f }; break;
             case ReverbType::Spring:   base = { 0.26f, 0.5f, 4500.0f, 0.2f, 0.5f, 0.0f, 1.2f }; break;
             case ReverbType::Mod:      base = { 0.9f, 0.72f, 7000.0f, 2.6f, 1.0f, 8.0f, 1.0f }; break;
         }
@@ -317,7 +319,7 @@ private:
     std::array<Mk1Grit, 2> grit;
     std::array<DcBlock, 2> dc;
     std::array<ToneFilter, 2> tone;
-    std::array<LowCut, 2> lowCut;
+    std::array<LowCut4, 2> lowCut;
     std::array<Svf, 2> filt;
     std::array<Biquad, 2> post, shimHp, shimLp;
     Smoother inGate, preSm;

@@ -79,7 +79,7 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout
     const StringArray voices { "MK II", "MK I" }, toneModes { "LPF", "HPF" };
     struct D { const char* p; const char* n; int type; float time, fb, mix, tone, duck; bool on; int sub; bool ping; };
     for (auto m : { D { "a", "Delay A", 2, 420.0f, 0.45f, 0.4f, 0.55f, 0.15f, true, 0, false },
-                    D { "b", "Delay B", 5, 380.0f, 0.4f, 0.32f, 0.6f, 0.3f, false, 2, true } })
+                    D { "b", "Delay B", 5, 380.0f, 0.4f, 0.38f, 0.6f, 0.2f, false, 2, true } })
     {
         const String p (m.p), n (m.n);
         layout.add (onoff (p + "On", n + " On", m.on));
@@ -136,15 +136,18 @@ inline const std::vector<FactoryPreset>& factoryPresets()
 {
     using namespace ParamIDs;
     // reverb type, Delay A type, Delay B type, Delay A ms, Delay B ms (Free time, all on)
-    auto om = [] (const char* name, int r, int a, int b, float aMs, float bMs, bool reverbOn = true, bool delaysOn = true) -> FactoryPreset
+    auto om = [] (const char* name, int r, int a, int b, float aMs, float bMs, bool reverbOn = true, bool delaysOn = true,
+                   std::map<juce::String, float> extras = {}) -> FactoryPreset
     {
         static const char* rn[] = { "room", "hall", "plate", "dist-verb", "fl-verb", "filter", "reverse", "spring", "mod" };
         static const char* an[] = { "digital", "analog", "tape", "echo", "liquid", "rainbow", "crystal", "low-bit", "fuzzy" };
         static const char* bn[] = { "digital", "analog", "tape", "real", "dyna", "galaxy", "mod", "tri-mod", "mod-inv" };
         const juce::String note = juce::String (reverbOn ? rn[r] : "no verb") + ", " + (delaysOn ? juce::String (an[a]) + " + " + bn[b] : juce::String ("no delays"));
-        return { name, note,
+        FactoryPreset fp { name, note,
                  { { rType, (float) r }, { rOn, reverbOn ? 1.0f : 0.0f }, { aType, (float) a }, { bType, (float) b },
                    { aOn, delaysOn ? 1.0f : 0.0f }, { bOn, delaysOn ? 1.0f : 0.0f }, { aSubdiv, 0 }, { bSubdiv, 0 }, { aTime, aMs }, { bTime, bMs }, { bPing, 0 } } };
+        for (auto& [k, val] : extras) fp.values[k] = val;   // level fixes from the preset audit
+        return fp;
     };
     static std::vector<FactoryPreset> p = [&]
     {
@@ -161,7 +164,7 @@ inline const std::vector<FactoryPreset>& factoryPresets()
         // bank 3
         v.push_back (om ("DEVY 3A", 2, 2, 0, 400, 800));
         v.push_back (om ("DEVY 3B", 3, 4, 2, 400, 800));
-        v.push_back (om ("DEVY 3C", 4, 0, 0, 465, 465, true, false));
+        v.push_back (om ("DEVY 3C", 4, 0, 0, 465, 465, true, false, { { rMix, 0.46f }, { rDecay, 0.65f } }));
         // bank 4
         v.push_back (om ("DEVY 4A", 6, 7, 3, 781, 520));
         v.push_back (om ("DEVY 4B", 1, 6, 1, 970, 124, false));
@@ -184,7 +187,7 @@ inline const std::vector<FactoryPreset>& factoryPresets()
         v.push_back (om ("DEVY 8C", 3, 8, 5, 675, 2000));
         // bank 9: bass picks
         v.push_back ({ "BILGE PUMP", "tape into hall, tight lows", { { aType, 2 }, { aTime, 420 }, { aFeedback, 0.45f }, { bOn, 0 }, { rType, 1 }, { rDecay, 0.55f } } });
-        v.push_back ({ "WALL OF SLUDGE", "the big Devy wall", { { aType, 2 }, { aSubdiv, 1 }, { aFeedback, 0.5f }, { bOn, 1 }, { bType, 1 }, { bSubdiv, 2 }, { bPing, 1 }, { route, 1 }, { rDecay, 0.85f }, { rShimmer, 0.3f }, { rMix, 0.5f } } });
+        v.push_back ({ "WALL OF SLUDGE", "the big Devy wall", { { aType, 2 }, { aSubdiv, 1 }, { aFeedback, 0.5f }, { bOn, 1 }, { bType, 1 }, { bSubdiv, 2 }, { bPing, 1 }, { route, 1 }, { rDecay, 0.85f }, { rShimmer, 0.3f }, { rMix, 0.4f }, { aMix, 0.34f } } });
         v.push_back ({ "DUB SNOT", "dark tape, long feedback", { { aType, 2 }, { aSubdiv, 1 }, { aFeedback, 0.68f }, { aTone, 0.32f }, { bOn, 1 }, { bType, 1 }, { bSubdiv, 2 }, { rDecay, 0.6f } } });
         // bank 10: MK I
         v.push_back ({ "OG BILGE", "MK I: tape into hall", { { aType, 2 }, { aVoice, 1 }, { bOn, 0 }, { bVoice, 1 }, { rVoice, 1 }, { rType, 1 } } });

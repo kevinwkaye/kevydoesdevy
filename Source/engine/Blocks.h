@@ -164,4 +164,20 @@ struct LowCut
     float process (float x) { return f.process (x); }
     void reset() { f.reset(); }
 };
+
+// Steeper low cut (24 dB/oct) for what goes into the delays and the reverb, so a bass's
+// fundamentals stay out of the repeats and tails altogether
+struct LowCut4
+{
+    Butter4 f;
+    float last = -1.0f;
+    void set (float hz, float fs)
+    {
+        if (std::fabs (hz - last) < 0.05f) return;
+        last = hz;
+        f.highpass (hz, fs);
+    }
+    float process (float x) { return f.process (x); }
+    void reset() { f.reset(); }
+};
 } // namespace kdd

@@ -226,7 +226,7 @@ public:
 
         // ducking follows the player's dry signal; Dyna always ducks
         float duck = p.duck;
-        if (type == DelayType::Dyna) duck = std::max (duck, 0.75f);
+        if (type == DelayType::Dyna) duck = std::max (duck, 0.6f);
         const float e = duckEnv.process (dryForDuck);
         const float g = 1.0f - duck * clampf (e * 4.0f, 0.0f, 0.92f);
 
@@ -238,6 +238,23 @@ public:
             l = mid + 0.45f * side;
             r = mid - 0.45f * side;
         }
+        // level trims for types that lose level to their own processing; the loop itself is untouched
+        float trim = 1.0f;
+        switch (type)
+        {
+            case DelayType::Rainbow: trim = 1.8f; break;
+            case DelayType::Crystal: trim = 1.4f; break;
+            case DelayType::TriMod:  trim = 2.0f; break;
+            case DelayType::Galaxy:  trim = 1.25f; break;
+            case DelayType::Tape:    trim = 1.15f; break;
+            case DelayType::Echo:    trim = 1.2f; break;
+            case DelayType::Fuzzy:   trim = 1.25f; break;
+            case DelayType::Dyna:    trim = 1.3f; break;
+            case DelayType::Mod:     trim = 1.4f; break;
+            case DelayType::ModInv:  trim = 1.35f; break;
+            default: break;
+        }
+        l *= trim; r *= trim;
         outL = l;
         outR = r;
         level = wetEnv.process (0.5f * (l + r));
@@ -264,7 +281,8 @@ private:
     std::array<Mk1Grit, 2> grit;
     std::array<DcBlock, 2> dc;
     std::array<ToneFilter, 2> tone;
-    std::array<LowCut, 2> lowCut, inCut;
+    std::array<LowCut, 2> lowCut;
+    std::array<LowCut4, 2> inCut;
     std::array<Darken, 2> sat;
     std::array<Crusher, 2> crush;
     struct PitchHp

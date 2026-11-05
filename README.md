@@ -25,6 +25,8 @@ cmake --build build --config Release
 
 JUCE 8.0.4 is downloaded automatically, or pass `-DKDD_JUCE_PATH=...` to use a local copy. `kdd_render_test` renders a bass line through every type, routing and looper action, and checks for NaNs, runaway levels and silence.
 
+`Tests/PresetAudit.cpp` plays a bass riff through every preset and reports how loud the effects are against the dry bass, how much fizz and sub they carry, and whether tails die away. Generate its preset header first with `python3 tools/gen_presets.py Source/Params.h build/PresetsGenerated.h`.
+
 ## Credits
 
 - Skull artwork by the friend this was made for, used with permission. The rest of the panel is drawn in his style.
