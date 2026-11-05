@@ -146,7 +146,15 @@ inline const std::vector<FactoryPreset>& factoryPresets()
         FactoryPreset fp { name, note,
                  { { rType, (float) r }, { rOn, reverbOn ? 1.0f : 0.0f }, { aType, (float) a }, { bType, (float) b },
                    { aOn, delaysOn ? 1.0f : 0.0f }, { bOn, delaysOn ? 1.0f : 0.0f }, { aSubdiv, 0 }, { bSubdiv, 0 }, { aTime, aMs }, { bTime, bMs }, { bPing, 0 } } };
-        for (auto& [k, val] : extras) fp.values[k] = val;   // level fixes from the preset audit
+        // Devy character: Devin Townsend's presets are big, long and wet, so the factory banks
+        // start from a lusher base than the plugin's defaults. The bass protections (dry
+        // untouched, low cut on everything wet) stay.
+        static const float decayFor[9] = { 0.55f, 0.74f, 0.68f, 0.62f, 0.7f, 0.7f, 0.6f, 0.58f, 0.74f };
+        const std::map<juce::String, float> devy {
+            { aFeedback, 0.52f }, { bFeedback, 0.5f }, { aMix, 0.42f }, { bMix, 0.4f }, { aDuck, 0.08f }, { bDuck, 0.12f },
+            { rMix, 0.44f }, { rDecay, decayFor[r] }, { rPreDelay, 30.0f } };
+        for (auto& [k, val] : devy) fp.values[k] = val;
+        for (auto& [k, val] : extras) fp.values[k] = val;   // per-preset tweaks from the audit
         return fp;
     };
     static std::vector<FactoryPreset> p = [&]
@@ -164,17 +172,17 @@ inline const std::vector<FactoryPreset>& factoryPresets()
         // bank 3
         v.push_back (om ("DEVY 3A", 2, 2, 0, 400, 800));
         v.push_back (om ("DEVY 3B", 3, 4, 2, 400, 800));
-        v.push_back (om ("DEVY 3C", 4, 0, 0, 465, 465, true, false, { { rMix, 0.46f }, { rDecay, 0.65f } }));
+        v.push_back (om ("DEVY 3C", 4, 0, 0, 465, 465, true, false, { { rMix, 0.56f }, { rDecay, 0.8f } }));
         // bank 4
         v.push_back (om ("DEVY 4A", 6, 7, 3, 781, 520));
         v.push_back (om ("DEVY 4B", 1, 6, 1, 970, 124, false));
-        v.push_back (om ("DEVY 4C", 1, 1, 8, 408, 817));
+        v.push_back (om ("DEVY 4C", 1, 1, 8, 408, 817, true, true, { { bMix, 0.34f } }));
         // bank 5
         v.push_back (om ("DEVY 5A", 0, 2, 3, 176, 705));
         v.push_back (om ("DEVY 5B", 2, 3, 5, 176, 470));
         v.push_back (om ("DEVY 5C", 1, 2, 0, 623, 311));
         // bank 6
-        v.push_back (om ("DEVY 6A", 8, 6, 3, 163, 478));
+        v.push_back (om ("DEVY 6A", 8, 6, 3, 163, 478, true, true, { { aMix, 0.34f }, { rMix, 0.4f } }));
         v.push_back (om ("DEVY 6B", 5, 5, 1, 204, 520));
         v.push_back (om ("DEVY 6C", 0, 0, 0, 652, 869));
         // bank 7

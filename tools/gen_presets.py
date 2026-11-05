@@ -33,6 +33,9 @@ for line in body.splitlines():
         dly = args[6] != 'false' if len(args) > 6 else True
         v = dict(rType=r, rOn=1 if rev else 0, aType=a, bType=b, aOn=1 if dly else 0, bOn=1 if dly else 0,
                  aSubdiv=0, bSubdiv=0, aTime=ams, bTime=bms, bPing=0)
+        decay_for = [0.55, 0.74, 0.68, 0.62, 0.7, 0.7, 0.6, 0.58, 0.74]
+        v.update(aFeedback=0.52, bFeedback=0.5, aMix=0.42, bMix=0.4, aDuck=0.08, bDuck=0.12,
+                 rMix=0.44, rDecay=decay_for[int(r)], rPreDelay=30.0)
         v.update(extra)
         presets.append((name, v))
         continue
