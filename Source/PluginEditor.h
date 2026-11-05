@@ -38,7 +38,7 @@ public:
     Chunky (const juce::String& text = {}, juce::Colour fill = col::paper);
     juce::Colour fill, onFill, textColour = col::ink, onText = col::ink;
     float fontSize = 15.0f, shadow = 4.0f, border = 3.5f;
-    bool displayFont = false, led = false;
+    bool displayFont = false, led = false, ledDim = false;   // ledDim: the off beat of a tempo flash
     juce::Justification just = juce::Justification::centred;
     int seed = 1;
     std::function<void()> onRightClick;

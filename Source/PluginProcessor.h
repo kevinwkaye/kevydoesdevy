@@ -54,6 +54,13 @@ public:
     void looperCommand (kdd::Looper::Command c);
     void stepPreset (int direction);
     void toggleBypassAll();
+    void killTails();                            // cut every repeat and tail now, and release infinite / freeze
+    float delayTimeMs (int module) const;        // the time a delay is actually running at
+    double tempoReference() const { return std::max (lastTapAt[0], std::max (lastTapAt[1], lastTapAt[2])); }
+
+    // the last MIDI message that arrived, for the monitor on the setup page
+    struct MidiSeen { int kind = -1, channel = 0, number = 0, value = 0, foot = -1, stamp = 0; };
+    MidiSeen lastMidi() const;
 
     // ---- presets: 10 banks of 3 (banks 1 to 8 as on the pedal)
     static constexpr int kSlots = 30;
@@ -149,6 +156,7 @@ private:
     std::atomic<float> uiIn { 0.0f }, uiExp { 0.0f };
     std::atomic<int> uiFootDown { 0 };
     std::atomic<double> lastFoot { 0.0 };
+    std::atomic<int> seenKind { -1 }, seenCh { 0 }, seenNum { 0 }, seenVal { 0 }, seenFoot { -1 }, seenStamp { 0 };
     juce::SpinLock sayLock;
     juce::String sayText;
     int sayStamp = 0;

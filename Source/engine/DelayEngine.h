@@ -70,6 +70,13 @@ public:
         fbSm.setTime (0.03f, fs);
         wetEnv.prepare (fs, 2.0f, 60.0f);
         for (auto& h : pitchHp) h.b.highpass (150.0f, 0.7071f, fs);
+        for (int c = 0; c < 2; ++c)
+        {
+            fuzzHp[(size_t) c].highpass (180.0f, 0.7071f, fs);
+            fuzzLp[(size_t) c].lowpass (5600.0f, 0.6f, fs);
+            fuzzEnv[(size_t) c].prepare (fs, 1.0f, 45.0f);
+            fuzzDc[(size_t) c].prepare (fs);
+        }
         reset();
     }
 
@@ -88,7 +95,21 @@ public:
     }
 
     // Clears the repeats, used when the type changes with Merge off
-    void clearTails() { for (auto& l : line) l.clear(); for (auto& f : fbL) f = 0.0f; }
+    void clearTails()
+    {
+        for (auto& l : line) l.clear();
+        for (auto& f : fbL) f = 0.0f;
+        for (auto& s : shifter) s.clear();
+        for (auto& r : reverse) r.clear();
+        // every filter in the loop too, or a runaway rebuilds from what they still hold
+        for (int c = 0; c < 2; ++c)
+        {
+            phaser[(size_t) c].reset(); grit[(size_t) c].reset(); dc[(size_t) c].reset(); tone[(size_t) c].reset();
+            lowCut[(size_t) c].reset(); inCut[(size_t) c].reset(); sat[(size_t) c].reset(); crush[(size_t) c].reset();
+            pitchHp[(size_t) c].b.reset(); fuzzHp[(size_t) c].reset(); fuzzLp[(size_t) c].reset(); fuzzDc[(size_t) c].reset();
+            fuzzEnv[(size_t) c].reset();
+        }
+    }
 
     // Process one stereo sample. dryForDuck is the player's dry signal, so ducking follows the playing.
     void process (float inL, float inR, float dryForDuck, const DelayParams& p, float& outL, float& outR)
@@ -206,7 +227,7 @@ public:
             if (p.mk1) y = grit[(size_t) c].process (y, fs);
             y = dc[(size_t) c].process (y);
             fbL[(size_t) c] = softClip (y * fb);
-            wet[c] = y;
+            wet[c] = type == DelayType::Fuzzy ? fuzz (c, y) : y;
         }
 
         // ping-pong sends each side's repeats to the other
@@ -292,6 +313,21 @@ private:
     };
     std::array<PitchHp, 2> pitchHp;
     std::array<float, 2> fbL {};
+
+    // Fuzzy: a real fuzz on what you hear. The repeat is normalised by its own envelope, clipped
+    // hard and lop-sided (like a fuzz pedal), then put back at the repeat's level, so it sounds
+    // equally fuzzy loud or quiet and the repeats still die away instead of sustaining.
+    std::array<Biquad, 2> fuzzHp, fuzzLp;
+    std::array<EnvFollower, 2> fuzzEnv;
+    std::array<DcBlock, 2> fuzzDc;
+    float fuzz (int c, float y)
+    {
+        const float h = fuzzHp[(size_t) c].process (y);
+        const float e = fuzzEnv[(size_t) c].process (h);
+        const float x = h / std::max (e, 1.0e-4f);
+        const float shaped = std::tanh (7.0f * x + 0.35f) - std::tanh (0.35f);
+        return fuzzDc[(size_t) c].process (fuzzLp[(size_t) c].process (shaped)) * std::min (e, 4.0f) * 1.1f;
+    }
     EnvFollower duckEnv, swellEnv, wetEnv;
     Smoother timeSm, tapeSm, inGate, fbSm;
     float lfo = 0.0f, lfo2 = 0.0f, level = 0.0f;

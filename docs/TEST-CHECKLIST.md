@@ -17,6 +17,9 @@ A short run-through before handing it over. It needs about 20 minutes with a bas
 - [ ] Right-click Tone and choose high-pass: the repeats thin out.
 - [ ] Set a subdivision (1/8.) and tap the master tempo: the time follows. Sync to DAW tempo follows the project.
 - [ ] HOLD INFINITE: the repeats sustain and new notes stay dry over them. Switch it off and the repeats decay.
+- [ ] Feedback at maximum until it howls, then KILL TAILS: silence within a moment, infinite and freeze switch off, and the dry bass and looper carry on.
+- [ ] Tap a tempo: each delay's ON light flashes at its time, and the TAP button pulses with the tempo.
+- [ ] Fuzzy on Delay A: the repeats are clearly fuzzed, and still die away.
 - [ ] MK I versus MK II: MK I is grittier and narrower, and the pitch types (Rainbow, Crystal) sound warblier.
 - [ ] The skull's jaw chatters with the repeats.
 
@@ -47,6 +50,8 @@ A short run-through before handing it over. It needs about 20 minutes with a bas
 
 ## Footswitches with the Anagram
 
+- [ ] Setup page, LAST MESSAGE: shows each switch as you press it, and which switch it maps to.
+- [ ] C+D on a four-switch pedal kills the tails.
 - [ ] The setup page says Connected: (Anagram), with Reaper's Anagram MIDI input disabled.
 - [ ] In Stomp mode, A, B and C light up the badges. If not, set up the scene messages from the guide and try again.
 - [ ] PLAY mode: A, B and C switch Delay A, Delay B and Reverb. A double-tap latches infinite or freeze, and another double-tap releases it.

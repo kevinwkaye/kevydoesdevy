@@ -136,8 +136,9 @@ void Chunky::paintButton (Graphics& g, bool over, bool down)
     if (led)
     {
         auto l = textArea.removeFromLeft (30.0f).withSizeKeepingCentre (22.0f, 22.0f);
-        if (on) { g.setColour (col::lime.withAlpha (0.45f)); g.fillEllipse (l.expanded (5.0f)); }
-        g.setColour (on ? col::lime : col::ledOff);
+        const bool lit = on && ! ledDim;
+        if (lit) { g.setColour (col::lime.withAlpha (0.45f)); g.fillEllipse (l.expanded (5.0f)); }
+        g.setColour (lit ? col::lime : (on ? col::lime.darker (0.75f) : col::ledOff));
         g.fillEllipse (l);
         g.setColour (col::ink);
         g.drawEllipse (l, 3.0f);
@@ -562,6 +563,9 @@ public:
         presetDown.onClick = [this] { proc.stepPreset (-1); };
         presetSave.fontSize = 12.0f;
         presetSave.onClick = [this] { presetMenu (true); };
+        killBtn.fill = col::red; killBtn.textColour = col::paper; killBtn.fontSize = 13.0f;
+        killBtn.onClick = [this] { proc.killTails(); };
+        addAndMakeVisible (killBtn);
 
         // ---- mode tabs, tap, routing, bypass all
         for (int m = 0; m < 4; ++m)
@@ -673,7 +677,7 @@ public:
         addAndMakeVisible (*expTargetTag);
         addAndMakeVisible (expBar);
 
-        startTimerHz (15);
+        startTimerHz (30);
         timerCallback();
     }
 
@@ -792,11 +796,27 @@ public:
     {
         for (int m = 0; m < 4; ++m) modeTabs[m]->setToggleState (proc.getMode() == m, dontSendNotification);
         routeBtn.setButtonText ("ROUTE  " + names::routes()[(int) proc.getParam (ParamIDs::route)]);
+        {
+            double tempo = proc.getParam (ParamIDs::bpm);
+            const double beat = 60.0 / std::max (20.0, tempo);
+            const double since = Time::getMillisecondCounterHiRes() * 0.001 - proc.tempoReference();
+            const bool beatOn = std::fmod (std::max (0.0, since), beat) / beat < 0.2;
+            const auto want = beatOn ? col::sky.brighter (0.45f) : col::sky;
+            if (tap.fill != want) { tap.fill = want; tap.repaint(); }
+        }
         for (int m = 0; m < 3; ++m)
         {
             auto& mod = modules[(size_t) m];
             mod.voice.setButtonText (proc.getParam (mod.voiceId.toRawUTF8()) > 0.5f ? "MK I" : "MK II");
             mod.stomp.setButtonText (mod.stomp.getToggleState() ? "ON" : "OFF");
+            if (m < 2)
+            {
+                // the ON light flashes at the delay's own time, in step with the last tap
+                const double period = proc.delayTimeMs (m) * 0.001;
+                const double since = Time::getMillisecondCounterHiRes() * 0.001 - proc.tempoReference();
+                const bool dim = period > 0.06 && std::fmod (std::max (0.0, since), period) / period > 0.25;
+                if (dim != mod.stomp.ledDim) { mod.stomp.ledDim = dim; mod.stomp.repaint(); }
+            }
             if (m < 2) mod.subdiv.setButtonText (names::subdivs()[(int) proc.getParam (m == 0 ? ParamIDs::aSubdiv : ParamIDs::bSubdiv)]);
         }
         const int lp = (int) proc.getParam (ParamIDs::loopPos);
@@ -916,11 +936,13 @@ public:
         int x = 28;
         const int tabW[4] = { 82, 70, 116, 104 };
         for (int m = 0; m < 4; ++m) { modeTabs[m]->setBounds (x, 164, tabW[m], 44); x += tabW[m]; }
-        tap.setBounds (420, 158, 190, 58);
-        bpmTag->setBounds (488, 170, 112, 30);
+        tap.setBounds (420, 158, 164, 58);
+        bpmTag->setBounds (474, 170, 100, 30);
         tap.setButtonText ("TAP");
-        routeBtn.setBounds (624, 158, 236, 58);
-        bypassBtn.setBounds (872, 158, 160, 58);
+        routeBtn.setBounds (594, 158, 210, 58);
+        bypassBtn.setBounds (814, 158, 106, 58);
+        bypassBtn.fontSize = 13.0f;
+        killBtn.setBounds (926, 158, 106, 58);
 
         for (int m = 0; m < 3; ++m)
         {
@@ -971,7 +993,7 @@ private:
     std::unique_ptr<Readout> presetName, presetSlot, presetNote, bpmTag, loopState, modeChip, expTargetTag;
     Chunky presetUp { "+" }, presetDown { "-" }, presetSave { "SAVE" };
     OwnedArray<Chunky> modeTabs, loopBtns, loopPosBtns;
-    Chunky tap { "TAP" }, routeBtn { "ROUTE" }, bypassBtn { "BYPASS ALL" };
+    Chunky tap { "TAP" }, routeBtn { "ROUTE" }, bypassBtn { "BYPASS ALL" }, killBtn { "KILL TAILS" };
     std::unique_ptr<AudioProcessorValueTreeState::ButtonAttachment> bypassAttach;
     std::array<Module, 3> modules;
     Chunky loopMain { "REC" };
@@ -1066,6 +1088,16 @@ public:
         expListen = textReadout ([this] { auto& s = proc.pedals(); return "listens for CC " + String (s.expCC) + (s.expChannel == 0 ? " on any channel" : " ch " + String (s.expChannel)); },
                                  fonts().label (12.0f), col::ink);
         addAndMakeVisible (*expListen);
+        monitor = textReadout ([this]
+        {
+            const auto m = proc.lastMidi();
+            if (m.kind < 0) return String ("LAST MESSAGE: nothing yet. Press a switch");
+            const String what = m.kind == 0 ? "CC " + String (m.number) + " = " + String (m.value)
+                              : (m.kind == 1 ? "PROGRAM " + String (m.number + 1) : "NOTE " + String (m.number));
+            return "LAST MESSAGE: " + what + "  CH " + String (m.channel)
+                   + (m.foot >= 0 ? "  > SWITCH " + String::charToString ((juce_wchar) ('A' + m.foot)) : String ("  > not a switch"));
+        }, fonts().label (12.0f), col::ink);
+        addAndMakeVisible (*monitor);
 
         // extras
         struct T { const char* id; const char* label; };
@@ -1159,10 +1191,10 @@ public:
         Rectangle<float> combos (24.0f, 470.0f, 1002.0f, 104.0f);
         drawBox (g, combos, col::paper, 80, 6.0f);
         chunkyText (g, "CHANGE MODE WITH TWO SWITCHES", fonts().display (22.0f), { 40.0f, 478.0f, 600.0f, 32.0f }, col::ink, col::ink, 0, 0.5f);
-        const char* combo[3][2] = { { "A + B", "LOOPER" }, { "B + C", "TAP" }, { "A + C", "PATCH" } };
-        for (int i = 0; i < 3; ++i)
+        const char* combo[4][2] = { { "A + B", "LOOPER" }, { "B + C", "TAP" }, { "A + C", "PATCH" }, { "C + D", "KILL TAILS" } };
+        for (int i = 0; i < 4; ++i)
         {
-            Rectangle<float> chip (44.0f + (float) i * 320.0f, 514.0f, 76.0f, 28.0f);
+            Rectangle<float> chip (44.0f + (float) i * 245.0f, 514.0f, 76.0f, 28.0f);
             drawBox (g, chip, col::pink, 90 + i, 0.0f, 3.0f, 6.0f);
             g.setColour (col::ink);
             g.setFont (fonts().label (14.0f));
@@ -1182,10 +1214,10 @@ public:
                           "Global EQ shapes the effects only, unless 'EQ on dry too' is on.",
                           Rectangle<int> (40, 818, 970, 52), Justification::topLeft, 3);
 
-        drawBox (g, { 1056.0f, 110.0f, 280.0f, 360.0f }, col::yellow, 82, 6.0f);
+        drawBox (g, { 1056.0f, 110.0f, 280.0f, 410.0f }, col::yellow, 82, 6.0f);
         chunkyText (g, "YOUR PEDAL", fonts().display (24.0f), { 1072.0f, 118.0f, 240.0f, 34.0f }, col::ink, col::ink, 0, 0.5f);
-        drawBox (g, { 1056.0f, 490.0f, 280.0f, 300.0f }, col::paper, 83, 6.0f);
-        chunkyText (g, "EXPRESSION", fonts().display (24.0f), { 1072.0f, 498.0f, 240.0f, 34.0f }, col::ink, col::ink, 0, 0.5f);
+        drawBox (g, { 1056.0f, 536.0f, 280.0f, 296.0f }, col::paper, 83, 6.0f);
+        chunkyText (g, "EXPRESSION", fonts().display (24.0f), { 1072.0f, 544.0f, 240.0f, 34.0f }, col::ink, col::ink, 0, 0.5f);
     }
 
     void resized() override
@@ -1206,12 +1238,13 @@ public:
         teachBtn.setBounds (1066, 274, 262, 58);
         teachText->setBounds (1070, 336, 252, 72);
         resetBtn.setBounds (1066, 412, 262, 44);
-        expTarget.setBounds (1066, 540, 262, 46);
-        expBar.setBounds (1070, 594, 256, 30);
-        expLearn.setBounds (1066, 632, 128, 46);
-        expCal.setBounds (1200, 632, 128, 46);
-        expCurve.setBounds (1066, 684, 262, 44);
-        expListen->setBounds (1070, 734, 256, 40);
+        monitor->setBounds (1070, 460, 252, 50);
+        expTarget.setBounds (1066, 586, 262, 46);
+        expBar.setBounds (1070, 640, 256, 30);
+        expLearn.setBounds (1066, 678, 128, 46);
+        expCal.setBounds (1200, 678, 128, 46);
+        expCurve.setBounds (1066, 730, 262, 44);
+        expListen->setBounds (1070, 780, 256, 40);
         for (int i = 0; i < extraToggles.size(); ++i)
             extraToggles[i]->setBounds (40 + (i % 4) * 172, 646 + (i / 4) * 60, 166, 54);
         for (int i = 0; i < 3; ++i) eqKnobs[(size_t) i]->setBounds (734 + i * 92, 640, 92, 128);
@@ -1223,7 +1256,7 @@ private:
     Chunky backBtn { "BACK" };
     OwnedArray<Chunky> viewTabs, learnBtns, extraToggles;
     std::vector<std::unique_ptr<Readout>> jobReadouts, listenReadouts;
-    std::unique_ptr<Readout> status, teachText, expListen;
+    std::unique_ptr<Readout> status, teachText, expListen, monitor;
     Chunky deviceBtn { "PEDAL" }, teachBtn { "TEACH MY PEDAL" }, resetBtn { "RESET FOOTSWITCHES" };
     Chunky expTarget { "CONTROLS" }, expLearn { "LEARN" }, expCal { "CALIBRATE" }, expCurve { "CURVE" };
     ExpressionBar expBar { proc };

@@ -34,6 +34,9 @@ The plugin reads the footswitch's MIDI device directly, using Prism Patch's `Dir
 | A+B | Looper mode (the pedal's own combo); again returns to Play |
 | B+C | Tap mode; again returns to Play |
 | A+C | Patch mode; again returns to Play |
+| C+D | Kill tails (four-switch pedals) |
+
+Some controllers keep A+B and C+D for their own bank switching and never send them. The setup page's LAST MESSAGE monitor shows what actually arrives.
 
 ## Differences from the house rules
 

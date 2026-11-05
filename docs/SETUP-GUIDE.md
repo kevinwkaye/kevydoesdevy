@@ -75,8 +75,9 @@ To **change mode**, press two switches together:
 - **A + B**: Looper
 - **B + C**: Tap
 - **A + C**: Patch
+- **C + D** (four-switch pedals only): kill tails
 
-The same pair again takes you back to Play. If your pedal can't send two switches at once, use the tabs on screen.
+The same pair again takes you back to Play. Some pedals use two-switch presses for their own bank changes and never send them. If a pair does nothing, open the setup page and watch **LAST MESSAGE** while you press it: that shows what, if anything, arrives. The mode tabs on screen always work.
 
 Every job also has a button on screen.
 
@@ -92,6 +93,9 @@ Every job also has a button on screen.
 
 ## 6. Handy extras
 
+- **KILL TAILS** (the red button next to Bypass All) stops every repeat and reverb tail at once, and releases infinite and freeze. It's the way out of a runaway feedback howl. Your dry bass and the looper carry on.
+- Each delay's **ON light flashes in time** with its delay time, and the **TAP** button pulses with the tempo, so you can see what you tapped.
+
 - **Right-click any knob** for MIDI Learn, if you want a knob on a controller.
 - **Presets**: click the preset name to pick from 30 (10 banks of 3). Banks 1 to 8 are the Ocean Machine II's own presets, bank 9 is bass picks and bank 10 is the original Ocean Machine sound. Click **SAVE** to store your own. They save with your Reaper project.
 - The **EXPRESSION** box is ready if you ever plug a pedal into the Anagram's Exp jack. It's set to sweep feedback on both delays. Click **LEARN**, then **CALIBRATE**.
@@ -100,6 +104,7 @@ Every job also has a button on screen.
 ## If something's not right
 
 - **"is in use by your DAW"** on the setup page: Reaper still has the Anagram's MIDI input enabled. Disable it, as in step 3.
+- **A switch does nothing:** open the setup page and watch **LAST MESSAGE** as you press it. If it shows a message but says *not a switch*, teach it with **LEARN**. If nothing shows, the pedal isn't sending anything for that press.
 - **A switch only works every other press:** press **TEACH MY PEDAL** and teach that switch again.
 - **No sound from the effects:** check the sections are **ON**, **BYPASS ALL** is off, and the MIX knobs are up.
 

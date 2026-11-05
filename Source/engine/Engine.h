@@ -84,6 +84,10 @@ public:
 
     void reset() { delayA.reset(); delayB.reset(); reverb.reset(); looper.clear(); }
 
+    // Kill tails: fade every delay repeat and reverb tail out over 30 ms, clear them, and fade
+    // the sections back in, so a runaway feedback loop stops at once. Dry and looper keep going.
+    void killTails() { killRequest.store (true); }
+
     static float mixGain (float knob) { return 1.25f * std::pow (clampf (knob, 0.0f, 1.0f), 1.5f); }
 
     void process (float* L, float* R, int n, const EngineParams& p)
@@ -96,8 +100,22 @@ public:
         }
         const float loopLevel = 1.4f * p.loopLevel;
 
+        if (killRequest.exchange (false)) killing = true;
+        const float killOut = 1.0f / (0.03f * fs), killIn = 1.0f / (0.02f * fs);
+
         for (int i = 0; i < n; ++i)
         {
+            if (killing)
+            {
+                killGain -= killOut;
+                if (killGain <= 0.0f)
+                {
+                    killGain = 0.0f;
+                    killing = false;
+                    delayA.clearTails(); delayB.clearTails(); reverb.clearTails();
+                }
+            }
+            else if (killGain < 1.0f) killGain = std::min (1.0f, killGain + killIn);
             const float dryL = L[i], dryR = R[i];
             const float duckSrc = 0.5f * (dryL + dryR);
             float xL = dryL, xR = dryR;
@@ -106,7 +124,7 @@ public:
             const float ga = mixGain (p.mixA) * tA.next (p.a.on || p.trails ? 1.0f : 0.0f);
             const float gb = mixGain (p.mixB) * tB.next (p.b.on || p.trails ? 1.0f : 0.0f);
             const float gr = mixGain (p.mixR) * tR.next (p.r.on || p.trails ? 1.0f : 0.0f);
-            const float wa = gA.next (ga), wb = gB.next (gb), wr = gR.next (gr);
+            const float wa = gA.next (ga) * killGain, wb = gB.next (gb) * killGain, wr = gR.next (gr) * killGain;
 
             float lpL = 0.0f, lpR = 0.0f;
             auto loopAt = [&] (int where, float& sl, float& sr)
@@ -188,6 +206,9 @@ public:
 
 private:
     float fs = 48000.0f;
+    std::atomic<bool> killRequest { false };
+    bool killing = false;
+    float killGain = 1.0f;
     Smoother gA, gB, gR, tA, tB, tR, gLoop;
     std::array<EqBand, 2> eqLow, eqMid, eqHigh, eqLow2, eqMid2, eqHigh2;
 };

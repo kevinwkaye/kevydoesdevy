@@ -62,7 +62,7 @@ static void writeWav (const std::string& name, const std::vector<float>& l, cons
     std::fclose (f);
 }
 
-struct Result { float peak = 0, tailRms = 0, wetRms = 0; bool finite = true; };
+struct Result { float peak = 0, tailRms = 0, wetRms = 0, lastRms = 0; bool finite = true; };
 
 // Renders seconds of audio; the hook can change parameters at each block
 static Result render (const std::string& name, EngineParams p, float seconds,
@@ -82,7 +82,7 @@ static Result render (const std::string& name, EngineParams p, float seconds,
         e->process (l.data() + s, r.data() + s, m, p);
     }
     Result res;
-    double tail = 0, wet = 0;
+    double tail = 0, wet = 0, last = 0;
     int tailN = 0;
     for (int i = 0; i < n; ++i)
     {
@@ -91,9 +91,11 @@ static Result render (const std::string& name, EngineParams p, float seconds,
         const float w = l[(size_t) i] - (p.killDry ? 0.0f : inL[(size_t) i]);
         wet += (double) w * w;
         if (i > (int) (4.3f * kFs)) { tail += (double) l[(size_t) i] * l[(size_t) i]; ++tailN; }
+        if (i > n - (int) (2.0f * kFs)) last += (double) l[(size_t) i] * l[(size_t) i];
     }
     res.tailRms = tailN > 0 ? (float) std::sqrt (tail / tailN) : 0.0f;
     res.wetRms = (float) std::sqrt (wet / n);
+    res.lastRms = (float) std::sqrt (last / (2.0 * kFs));
     writeWav (name, l, r);
     return res;
 }
@@ -140,6 +142,19 @@ int main (int argc, char** argv)
     {
         EngineParams p; p.b.on = false; p.r.on = false; p.mixB = 0; p.mixR = 0; p.mixA = 0.8f; p.a.feedback = 1.0f; p.a.position = 2;
         check ("A Tape feedback max", render ("A_runaway", p, 20.0f), 0.01f, 3.5f);
+    }
+    // kill tails: a runaway feedback loop goes silent once the input has stopped
+    {
+        EngineParams p; p.b.on = false; p.mixB = 0; p.r.decay = 0.9f; p.mixA = 0.8f; p.a.feedback = 1.0f; p.a.position = 2;
+        const auto r = render ("A_killed", p, 12.0f, [] (Engine& e, EngineParams&, float t)
+        {
+            static bool done = false;
+            if (t < 0.01f) done = false;
+            if (! done && t >= 6.0f) { e.killTails(); done = true; }
+        });
+        check ("Kill tails", r, 0.01f, 3.5f);
+        std::printf ("  before the kill %.4f, last 2 s after it %.6f\n", r.tailRms, r.lastRms);
+        if (r.lastRms > 0.0005f) { std::printf ("  tails still ringing after kill\n"); ++failures; }
     }
     // infinite: holds the repeats without growing, input closed
     {

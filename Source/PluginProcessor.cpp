@@ -187,6 +187,18 @@ void KddProcessor::handleMidi (const MidiMessage& m, bool fromDevice)
     const bool isCC = m.isController(), isPC = m.isProgramChange(), isNoteOn = m.isNoteOn(), isNoteOff = m.isNoteOff();
     if (! isCC && ! isPC && ! isNoteOn && ! isNoteOff) return;
     const int ch = m.getChannel();
+    seenKind.store (isCC ? 0 : (isPC ? 1 : 2));
+    seenCh.store (ch);
+    seenNum.store (isCC ? m.getControllerNumber() : (isPC ? m.getProgramChangeNumber() : m.getNoteNumber()));
+    seenVal.store (isCC ? m.getControllerValue() : (isNoteOn ? m.getVelocity() : 0));
+    seenFoot.store (-1);
+    {
+        int f = -1;
+        for (int k = 0; k < PedalSettings::kSwitches && f < 0; ++k)
+            for (auto& bnd : settings.fs[(size_t) k]) if (bnd.matches (m, fromDevice)) { f = k; break; }
+        seenFoot.store (f);
+    }
+    seenStamp.fetch_add (1);
 
     // Teach my pedal and Learn take the next message, whatever it is
     if (teach.load() > 0 || learnTarget.load() != LearnNone)
@@ -435,6 +447,7 @@ void KddProcessor::onFootEvent (int sw, FootswitchLogic::Event e, double t)
         else if (sw == 0b110) target = ModeTap;
         else if (sw == 0b101) target = ModePatch;
         if (target >= 0) setMode (m == target ? ModePlay : target);
+        else if (sw == 0b1100) killTails();   // C+D on four-switch pedals
         return;
     }
     if (sw == 3)
@@ -512,6 +525,28 @@ void KddProcessor::toggleBypassAll()
     const bool off = getParam (ParamIDs::bypassAll) < 0.5f;
     setParamPlain (ParamIDs::bypassAll, off ? 1.0f : 0.0f);
     say (off ? "ALL BYPASSED" : "ALL BACK ON");
+}
+
+void KddProcessor::killTails()
+{
+    for (int m = 0; m < 3; ++m) { infLatched[(size_t) m] = false; setParamPlain (kModuleInf[m], 0.0f); }
+    engine.killTails();
+    say ("TAILS KILLED");
+}
+
+float KddProcessor::delayTimeMs (int module) const
+{
+    const bool a = module == 0;
+    const int s = (int) std::lround (getParam (a ? ParamIDs::aSubdiv : ParamIDs::bSubdiv));
+    if (s == 0) return getParam (a ? ParamIDs::aTime : ParamIDs::bTime);
+    double tempo = getParam (ParamIDs::bpm);
+    if (getParam (ParamIDs::syncHost) > 0.5f && hostBpm.load() > 20.0) tempo = hostBpm.load();
+    return (float) jlimit (10.0, 2000.0, 60000.0 / std::max (20.0, tempo) * names::subdivBeats (s));
+}
+
+KddProcessor::MidiSeen KddProcessor::lastMidi() const
+{
+    return { seenKind.load(), seenCh.load(), seenNum.load(), seenVal.load(), seenFoot.load(), seenStamp.load() };
 }
 
 // tap tempo: the average of the last few taps, reset after two seconds without one

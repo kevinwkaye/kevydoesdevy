@@ -80,6 +80,10 @@ public:
         for (auto& d : lines) d.clear();
         for (auto& z : damp) z = 0.0f;
         for (auto& s : shimFb) s = 0.0f;
+        for (auto& f : flFb) f = 0.0f;
+        for (int c = 0; c < 2; ++c) { flange[(size_t) c].clear(); shimmer[(size_t) c].clear(); reverse[(size_t) c].clear(); }
+        for (auto& ch : diff) for (auto& a : ch) a.line.clear();
+        pre.clear();
     }
 
     void process (float inL, float inR, const ReverbParams& p, float& outL, float& outR)
